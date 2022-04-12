@@ -11,7 +11,6 @@ class Card:
         self.check_valid(suite, value)
         self.suite = suite
         self.value = value
-        self.num_val = self.get_num_val()
 
     def check_valid(self, suite, value):
         if suite not in ["Spades", "Hearts", "Clubs", "Diamonds"]:
@@ -23,12 +22,29 @@ class Card:
     def __str__(self):
         return self.value + " of " + self.suite
 
+    #converts the string value to the numeric value
+    def get_poker_val(self):
+        if self.value == "J":
+            return 11
+        if self.value == "Q":
+            return 12
+        if self.value == "K":
+            return 13
+        if self.value == "A":
+            return 14
+        return int(self.value)
+    
+class PokerCard(Card):
+
+    def __init__(self, suite, value):
+        super(PokerCard, self).__init__(suite, value)
+        self.num_val = self.get_num_val()
+
     #less than function to compare cards
     #suites have no affect on value
     def __lt__(self, other):
         return self.num_val < other.num_val
 
-    #converts the string value to the numeric value
     def get_num_val(self):
         if self.value == "J":
             return 11
@@ -40,17 +56,44 @@ class Card:
             return 14
         return int(self.value)
 
+class BJCard(Card):
+
+    def __init__(self, suite, value):
+        super(BJCard, self).__init__(suite, value)
+        self.num_val = self.get_num_val()
+
+    def get_num_val(self):
+        if self.value == "J":
+            return 10
+        if self.value == "Q":
+            return 10
+        if self.value == "K":
+            return 10
+        if self.value == "A":
+            return 11
+        return int(self.value)
+    
+    #equal to function to compare cards
+    #useful for splitting in BJ
+    def __eq__(self, other):
+        return self.bj_val == other.bj_val
+
 #This is the deck object
 class Deck:
     #No values are passed to it
     #when created it will contain a list of 52 unique cards in random order
     #num_decks default is 1 but if another value is given
-    def __init__(self, num_decks=1):
+    def __init__(self, type, num_decks=1):
+        self.type = type
         if num_decks < 1:
             num_decks = 1
         self.num_decks = num_decks // 1
         self.deck = None
         self.shuffle()
+
+    #returns lenght of deck
+    def __len__(self):
+        return len(self.deck)
 
     #likely does not need to be used other than error checking
     #string representation of deck was just to make sure shuffle worked
@@ -65,7 +108,7 @@ class Deck:
     def shuffle(self):
         suites = ["Spades", "Clubs", "Diamonds", "Hearts"]
         values = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-        cards = [Card(suite, value) 
+        cards = [self.type(suite, value) 
                  for suite in suites 
                  for value in values] * self.num_decks
         shuffle(cards)

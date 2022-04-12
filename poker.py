@@ -1,4 +1,4 @@
-from deck import Deck
+from deck import Deck, PokerCard
 
 #This is the hand object
 #Each player will have a hand
@@ -168,7 +168,7 @@ class hand:
         cur_card = cards[0]
         pair = None
         for card in cards[1:]:
-            if cur_card.num_val == card.num_val:
+            if cur_card == card:
                 pair = [cur_card, card]
                 cards.remove(cur_card)
                 cards.remove(card)
@@ -197,7 +197,7 @@ class hand:
         cur_card = cards[0]
         three = None
         for i in range(2, len(cards)):
-            if cur_card.num_val == cards[i].num_val:
+            if cur_card == cards[i]:
                 three = [cur_card, cards[i - 1], cards[i]]
                 return three
             cur_card = cards[i - 1]
@@ -211,7 +211,7 @@ class hand:
         cur_card = cards[0]
         four = None
         for i in range(3, len(cards)):
-            if cur_card.num_val == cards[i].num_val:
+            if cur_card == cards[i]:
                 four = [cur_card, cards[i - 2], cards[i - 1], cards[i]]
                 return four
             cur_card = cards[i - 2]
@@ -390,7 +390,7 @@ class game:
         self.players = [None] * 9
         self.seats_taken = []
         self.dealer_pos = 1
-        self.deck = Deck()
+        self.deck = Deck(PokerCard)
         self.curr_bet = 0
 
     def addPlayer(self, player, pos):
