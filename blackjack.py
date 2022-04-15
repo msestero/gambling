@@ -11,6 +11,8 @@ class BJHand:
         self.value = 0
         self.busted = False
         self.soft = False
+        self.can_double = True
+
         self.num_ace = 0
         self.ace_1_val = 0
 
@@ -35,7 +37,8 @@ class BJHand:
         self.value += card.num_val
         if self.value > 21:
             self.reduce()
-
+        if len(self.cards) > 2:
+            self.can_double = False
         
     def add_card(self, card):
         self.cards.append(card)
@@ -95,6 +98,8 @@ class Player:
 
     def decision(self, dealer):
         options = ["hit", "stand"]
+        if self.hand.can_double:
+            options.append("double")
         choice = None
         while choice not in options:
             print(f"dealer:\n{dealer} \n")
@@ -132,6 +137,7 @@ class BlackJack:
         self.dealer = Dealer()
         self.player = Player(10000)
         self.deck = Deck(BJCard, decks)
+        self.decks = decks
 
     def handle_player(self):
         if self.player.hand.value == 21:
@@ -143,6 +149,9 @@ class BlackJack:
                 decision = self.player.decision(self.dealer)
             else:
                 print("BUSTED\n")
+        if decision == "double":
+            self.player.add_card(self.deck.deal())
+            self.player.bet *= 2
 
     def handle_dealer(self):
         self.dealer.turn = True
@@ -187,6 +196,8 @@ class BlackJack:
         self.reset()
 
     def deal(self):
+        if len(self.deck) / (52 * self.decks) <= 0.5:
+            self.deck.shuffle()
         for i in range(2):
             self.player.add_card(self.deck.deal())
             self.dealer.add_card(self.deck.deal())
@@ -206,6 +217,3 @@ if __name__ == "__main__":
     while play:
         game.round()
         play = getPlay()
-
-
-

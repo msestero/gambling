@@ -2,8 +2,7 @@ from random import shuffle
 
 #This is the card object
 #A card can have a suite and a value
-#value is represented both as a string and a number
-#A = 14, K = 13, Q = 12, J = 11
+#value is represented both as a string
 class Card:
     #suite is either Spades, Clubs, Hearts, Diamonds
     #value is one of ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
@@ -22,17 +21,6 @@ class Card:
     def __str__(self):
         return self.value + " of " + self.suite
 
-    #converts the string value to the numeric value
-    def get_poker_val(self):
-        if self.value == "J":
-            return 11
-        if self.value == "Q":
-            return 12
-        if self.value == "K":
-            return 13
-        if self.value == "A":
-            return 14
-        return int(self.value)
     
 class PokerCard(Card):
 
