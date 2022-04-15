@@ -10,15 +10,37 @@ class BJHand:
         self.cards = []
         self.value = 0
         self.busted = False
+        self.soft = False
+        self.num_ace = 0
+        self.ace_1_val = 0
 
     def __len__(self):
         return len(self.cards)
 
-    def add_card(self, card):
-        self.cards.append(card)
-        self.value += card.num_val
+    def check_busted(self):
         if self.value > 21:
             self.busted = True
+
+    def reduce(self):
+        if self.num_ace > self.ace_1_val:
+            self.value -= 10
+            self.ace_1_val += 1
+        if self.num_ace == self.ace_1_val:
+            self.soft = False
+
+    def add_value(self, card):
+        if card.num_val == 11:
+            self.soft = True
+            self.num_ace += 1
+        self.value += card.num_val
+        if self.value > 21:
+            self.reduce()
+
+        
+    def add_card(self, card):
+        self.cards.append(card)
+        self.add_value(card)
+        self.check_busted()
 
     def __str__(self):
         res = f""
@@ -124,7 +146,7 @@ class BlackJack:
 
     def handle_dealer(self):
         self.dealer.turn = True
-        while self.dealer.hand.value < 17:
+        while self.dealer.hand.value < 17 or (self.dealer.hand.value == 17 and self.dealer.hand.soft):
             self.dealer.add_card(self.deck.deal())
 
     def handle_winning(self):
@@ -149,7 +171,11 @@ class BlackJack:
         self.dealer.reset()
 
     def dealer_bj(self):
-        return self.dealer.hand.value == 21
+        if self.dealer.hand.value == 21:
+            print("Dealer BJ\n")
+            self.dealer.turn = True
+            return True
+        return False
 
     def round(self):
         self.player.set_bet(self.min_bet, self.max_bet)
