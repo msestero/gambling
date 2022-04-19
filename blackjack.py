@@ -9,11 +9,13 @@ class BJHand:
     def reset(self):
         self.cards = []
         self.value = 0
+        
         self.busted = False
         self.soft = False
-        self.can_double = True
-        self.can_split = False
 
+        self.can_double = True
+
+        self.can_split = False
         self.just_split = False
 
         self.num_ace = 0
