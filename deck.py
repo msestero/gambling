@@ -64,7 +64,7 @@ class BJCard(Card):
     #equal to function to compare cards
     #useful for splitting in BJ
     def __eq__(self, other):
-        return self.bj_val == other.bj_val
+        return self.num_val == other.num_val
 
 #This is the deck object
 class Deck:

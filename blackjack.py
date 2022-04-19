@@ -12,6 +12,9 @@ class BJHand:
         self.busted = False
         self.soft = False
         self.can_double = True
+        self.can_split = False
+
+        self.just_split = False
 
         self.num_ace = 0
         self.ace_1_val = 0
@@ -39,6 +42,19 @@ class BJHand:
             self.reduce()
         if len(self.cards) > 2:
             self.can_double = False
+            self.can_split = False
+        if len(self.cards) == 2 and self.cards[0] == self.cards[1]:
+            self.can_split = True
+    
+    def split(self):
+        new_hand = BJHand()
+        new_hand.add_card(self.cards[1])
+        new_hand.just_split = True
+        self.value = 0
+        self.add_value(self.cards[0])
+        self.cards = [self.cards[0]]
+        self.just_split = True
+        return new_hand
         
     def add_card(self, card):
         self.cards.append(card)
@@ -49,7 +65,7 @@ class BJHand:
         res = f""
         for card in self.cards:
             res += f"{str(card)}\n"
-        res += f"{self.value}"
+        res += f"total: {self.value}"
         return res
 
     def __lt__(self, other):
@@ -73,14 +89,30 @@ class Player:
 
     def __init__(self, init_money):
         self.money = init_money
-        self.hand = BJHand()
-        self.bet = 0
+        self.reset()
 
     def __str__(self):
-        return str(self.hand)
+        hands = [str(hand) for hand in self.hands]
+        res = f""
+        for hand in hands:
+            res += f"{hand}\n\n"
+        return res
 
     def reset(self):
-        self.hand.reset()
+        self.hands = []
+        self.num_hands = 0
+        self.bets = []
+
+    def set_num_hands(self):
+        hands = 0
+        while not isinstance(hands, int) or hands < 1 or hands > 3:
+            hands = input("How many hands do you wish to play: ")
+            if hands.isnumeric():
+                hands = int(hands)
+        print()
+        self.num_hands = hands
+        for i in range(self.num_hands):
+            self.hands.append(BJHand()) 
 
     def set_bet(self, min, max):
         bet = 0
@@ -91,19 +123,21 @@ class Player:
             if bet.isnumeric():
                 bet = int(bet)
         print()
-        self.bet = bet
+        self.bets = [bet] * self.num_hands
 
-    def add_card(self, card):
-        self.hand.add_card(card)
+    def add_card(self, card, index):
+        self.hands[index].add_card(card)
 
-    def decision(self, dealer):
+    def decision(self, dealer, index):
         options = ["hit", "stand"]
-        if self.hand.can_double:
+        if self.hands[index].can_double:
             options.append("double")
+        if self.hands[index].can_split:
+            options.append("split")
         choice = None
         while choice not in options:
             print(f"dealer:\n{dealer} \n")
-            print(f"player:\n{self.hand} \n")
+            print(f"player:\n{self.hands[index]} \n")
             print(f"options: {options}")
             choice = input()
             print()
@@ -139,41 +173,49 @@ class BlackJack:
         self.deck = Deck(BJCard, decks)
         self.decks = decks
 
-    def handle_player(self):
-        if self.player.hand.value == 21:
+    def handle_player(self, index):
+        if self.player.hands[index].just_split:
+            self.player.add_card(self.deck.deal(), index)
+            self.player.hands[index].just_split = False
+        if self.player.hands[index].value == 21:
             return
-        decision = self.player.decision(self.dealer)
-        while not self.player.hand.busted and decision == "hit":
-            self.player.add_card(self.deck.deal())
-            if not self.player.hand.busted:
-                decision = self.player.decision(self.dealer)
+        decision = self.player.decision(self.dealer, index)
+        while not self.player.hands[index].busted and decision == "hit":
+            self.player.add_card(self.deck.deal(), index)
+            if not self.player.hands[index].busted:
+                decision = self.player.decision(self.dealer, index)
             else:
                 print("BUSTED\n")
         if decision == "double":
-            self.player.add_card(self.deck.deal())
-            self.player.bet *= 2
+            self.player.add_card(self.deck.deal(), index)
+            self.player.bets[index] *= 2
+        if decision == "split":
+            self.player.hands.insert(index + 1, self.player.hands[index].split())
+            self.player.bets.insert(index + 1, self.player.bets[index])
+            self.player.num_hands += 1
+            return index
+        return index + 1
 
     def handle_dealer(self):
         self.dealer.turn = True
         while self.dealer.hand.value < 17 or (self.dealer.hand.value == 17 and self.dealer.hand.soft):
             self.dealer.add_card(self.deck.deal())
 
-    def handle_winning(self):
-        print(f"dealer:\n{self.dealer}\n")
-        print(f"player:\n{self.player}\n")
-        if self.player.hand == self.dealer.hand:
-            print("push")
+    def handle_winning(self, index):
+        print(f"player:\n{self.player.hands[index]}\n")
+        if self.player.hands[index] == self.dealer.hand:
+            print("push\n")
             return
-        if self.player.hand < self.dealer.hand:
-            print("loser")
-            self.player.money -= self.player.bet
+        if self.player.hands[index] < self.dealer.hand:
+            print(f"lost {self.player.bets[index]}\n")
+            self.player.money -= self.player.bets[index]
             return
-        if len(self.player.hand) == 2 and self.player.hand.value == 21:
-            self.player.money += self.player.bet * (3 / 2)
-            print("winner (Black Jack pays 3 to 2)")
+        if len(self.player.hands[index]) == 2 and self.player.hands[index].value == 21:
+            self.player.money += self.player.bets[index] * (3 / 2)
+            print(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
             return
-        self.player.money += self.player.bet
-        print("winner")
+        self.player.money += self.player.bets[index]
+        print(f"won {self.player.bets[index]}\n")
 
     def reset(self):
         self.player.reset()
@@ -187,19 +229,25 @@ class BlackJack:
         return False
 
     def round(self):
+        self.player.set_num_hands()
         self.player.set_bet(self.min_bet, self.max_bet)
         self.deal()
         if not self.dealer_bj():
-            self.handle_player()
+            index = 0
+            while index < self.player.num_hands:
+                index = self.handle_player(index)
             self.handle_dealer()
-        self.handle_winning()
+        print(f"dealer:\n{self.dealer}\n")
+        for i in range(self.player.num_hands):
+            self.handle_winning(i)
         self.reset()
 
     def deal(self):
         if len(self.deck) / (52 * self.decks) <= 0.5:
             self.deck.shuffle()
         for i in range(2):
-            self.player.add_card(self.deck.deal())
+            for i in range(self.player.num_hands):
+                self.player.add_card(self.deck.deal(), i)
             self.dealer.add_card(self.deck.deal())
 
 
