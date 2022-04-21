@@ -1,12 +1,19 @@
-from poker import game
-from poker import player
+from blackjack import BlackJack
+from blackjack import Player
+from blackjack import BasicStrategyPlayer
+
+def main():
+    tot_hands = 0
+    attempts = 10000
+    starting_cash = 1000
+    for i in range(attempts):
+        player = BasicStrategyPlayer(starting_cash)
+        game = BlackJack(player, decks=1)
+        tot_hands += game.play()
+    average_hands = tot_hands / attempts
+    average_loss_per = starting_cash / average_hands
+    edge = average_loss_per / 25
+    print(average_hands, average_loss_per, edge)
 
 if __name__ == "__main__":
-    game = game(1000, 5, 50)
-    player1 = player("player1", 1000)
-    player2 = player("player2", 1000)
-    player3 = player("player3", 1000)
-    game.addPlayer(player1, 0)
-    game.addPlayer(player2, 1)
-    game.addPlayer(player3, 8)
-    game.play_round()
+    main()

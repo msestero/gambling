@@ -92,9 +92,10 @@ class BJHand:
 
 class Player:
 
-    def __init__(self, init_money):
-        self.money = init_money
+    def __init__(self):
+        self.money = self.getMoney()
         self.reset()
+        self.hands_played = 0
 
     def __str__(self):
         hands = [str(hand) for hand in self.hands]
@@ -102,6 +103,14 @@ class Player:
         for hand in hands:
             res += f"{hand}\n\n"
         return res
+
+    def getMoney(self):
+        initial_money = None
+        while True:
+            initial_money = input("Initial Money: ")
+            if initial_money.isnumeric():
+                return int(initial_money)
+            print("\nplease give integer\n")
 
     def reset(self):
         self.hands = []
@@ -117,7 +126,8 @@ class Player:
         print()
         self.num_hands = hands
         for i in range(self.num_hands):
-            self.hands.append(BJHand()) 
+            self.hands.append(BJHand())
+        self.hands_played += hands
 
     def set_bet(self, min, max):
         bet = 0
@@ -149,7 +159,41 @@ class Player:
             print(f"options: {options}")
             choice = input()
             print()
+        self.hands[index].can_surrender = False
         return choice
+
+    def getPlay(self):
+        p = input("Play again? (y/n): ")
+        if p == "y":
+            return True
+        if p == "n":
+            return False
+        return self.getPlay()
+
+class BasicStrategyPlayer(Player):
+
+    def __init__(self, initial_money):
+        self.money = initial_money
+        self.reset()
+        self.hands_played = 0
+
+    def set_num_hands(self):
+        self.num_hands = 1
+        self.hands = [BJHand()]
+        self.hands_played += 1
+
+    def set_bet(self, min, max):
+        print(self.money)
+        self.bets = [25]
+    
+    def decision(self, dealer, index):
+        return "stand"
+
+    def getPlay(self):
+        if self.money >= 25:
+            return True
+        print(f"hands played: {self.hands_played}")
+        return False
 
 
 class Dealer:
@@ -173,14 +217,13 @@ class Dealer:
 
 class BlackJack:
 
-    def __init__(self, decks=1, automate=False):
+    def __init__(self, player, decks=1):
         self.min_bet = 25
         self.max_bet = 3000
         self.dealer = Dealer()
-        self.player = Player(10000)
+        self.player = player
         self.deck = Deck(BJCard, decks)
         self.decks = decks
-        self.automate = automate
 
     def handle_player(self, index):
         if self.player.hands[index].just_split:
@@ -206,7 +249,6 @@ class BlackJack:
         if decision == "surrender":
             self.player.bets[index] /= 2
             self.player.hands[index].surrendered = True
-        self.player.hands[index].can_surrender = False
         return index + 1
 
     def handle_dealer(self):
@@ -216,6 +258,10 @@ class BlackJack:
 
     def handle_winning(self, index):
         print(f"player:\n{self.player.hands[index]}\n")
+        if len(self.player.hands[index]) == 2 and self.player.hands[index].value == 21 and len(self.dealer.hand) > 2:
+            self.player.money += self.player.bets[index] * (3 / 2)
+            print(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
+            return
         if self.player.hands[index].surrendered:
             print(f"lost {self.player.bets[index]}\n")
             self.player.money -= self.player.bets[index]
@@ -226,10 +272,6 @@ class BlackJack:
         if self.player.hands[index] < self.dealer.hand:
             print(f"lost {self.player.bets[index]}\n")
             self.player.money -= self.player.bets[index]
-            return
-        if len(self.player.hands[index]) == 2 and self.player.hands[index].value == 21:
-            self.player.money += self.player.bets[index] * (3 / 2)
-            print(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
             return
         self.player.money += self.player.bets[index]
         print(f"won {self.player.bets[index]}\n")
@@ -267,23 +309,10 @@ class BlackJack:
                 self.player.add_card(self.deck.deal(), i)
             self.dealer.add_card(self.deck.deal())
 
-
-def getPlay():
-    p = input("Play again? (y/n): ")
-    if p == "y":
-        return True
-    if p == "n":
-        return False
-    return getPlay()
-
-
-def main():
-    game = BlackJack(decks=6, automate=False)
-    play = True
-    while play:
-        game.round()
-        play = getPlay()
-    print(f"\n{game.player.money}")
-
-if __name__ == "__main__":
-    main()
+    def play(self):
+        play = True
+        while play:
+            self.round()
+            play = self.player.getPlay()
+        print(f"\n{self.player.money}")
+        return self.player.hands_played
