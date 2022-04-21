@@ -9,11 +9,14 @@ class BJHand:
     def reset(self):
         self.cards = []
         self.value = 0
-        
+
         self.busted = False
         self.soft = False
 
         self.can_double = True
+
+        self.can_surrender = True
+        self.surrendered = False
 
         self.can_split = False
         self.just_split = False
@@ -108,7 +111,7 @@ class Player:
     def set_num_hands(self):
         hands = 0
         while not isinstance(hands, int) or hands < 1 or hands > 3:
-            hands = input("How many hands do you wish to play: ")
+            hands = input("\nnum hands: ")
             if hands.isnumeric():
                 hands = int(hands)
         print()
@@ -119,8 +122,9 @@ class Player:
     def set_bet(self, min, max):
         bet = 0
         while not isinstance(bet, int) or bet < min or bet > max:
-            print(f"money: {self.money}\n\n")
-            print(f"max bet: {max}\nmin bet: {min}\n\n")
+            print(f"your money: {self.money}\n")
+            print(f"max bet: {max}")
+            print(f"min bet: {min}\n")
             bet = input("bet amount: ")
             if bet.isnumeric():
                 bet = int(bet)
@@ -136,6 +140,8 @@ class Player:
             options.append("double")
         if self.hands[index].can_split:
             options.append("split")
+        if self.hands[index].can_surrender:
+            options.append("surrender")
         choice = None
         while choice not in options:
             print(f"dealer:\n{dealer} \n")
@@ -167,20 +173,21 @@ class Dealer:
 
 class BlackJack:
 
-    def __init__(self, decks=1):
+    def __init__(self, decks=1, automate=False):
         self.min_bet = 25
         self.max_bet = 3000
         self.dealer = Dealer()
         self.player = Player(10000)
         self.deck = Deck(BJCard, decks)
         self.decks = decks
+        self.automate = automate
 
     def handle_player(self, index):
         if self.player.hands[index].just_split:
             self.player.add_card(self.deck.deal(), index)
             self.player.hands[index].just_split = False
         if self.player.hands[index].value == 21:
-            return
+            return index + 1
         decision = self.player.decision(self.dealer, index)
         while not self.player.hands[index].busted and decision == "hit":
             self.player.add_card(self.deck.deal(), index)
@@ -196,6 +203,10 @@ class BlackJack:
             self.player.bets.insert(index + 1, self.player.bets[index])
             self.player.num_hands += 1
             return index
+        if decision == "surrender":
+            self.player.bets[index] /= 2
+            self.player.hands[index].surrendered = True
+        self.player.hands[index].can_surrender = False
         return index + 1
 
     def handle_dealer(self):
@@ -205,6 +216,10 @@ class BlackJack:
 
     def handle_winning(self, index):
         print(f"player:\n{self.player.hands[index]}\n")
+        if self.player.hands[index].surrendered:
+            print(f"lost {self.player.bets[index]}\n")
+            self.player.money -= self.player.bets[index]
+            return
         if self.player.hands[index] == self.dealer.hand:
             print("push\n")
             return
@@ -261,9 +276,14 @@ def getPlay():
         return False
     return getPlay()
 
-if __name__ == "__main__":
-    game = BlackJack(2)
+
+def main():
+    game = BlackJack(decks=6, automate=False)
     play = True
     while play:
         game.round()
         play = getPlay()
+    print(f"\n{game.player.money}")
+
+if __name__ == "__main__":
+    main()
