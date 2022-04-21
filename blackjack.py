@@ -183,7 +183,6 @@ class BasicStrategyPlayer(Player):
         self.hands_played += 1
 
     def set_bet(self, min, max):
-        print(self.money)
         self.bets = [25]
     
     def decision(self, dealer, index):
@@ -192,7 +191,6 @@ class BasicStrategyPlayer(Player):
     def getPlay(self):
         if self.money >= 25:
             return True
-        print(f"hands played: {self.hands_played}")
         return False
 
 
@@ -217,13 +215,18 @@ class Dealer:
 
 class BlackJack:
 
-    def __init__(self, player, decks=1):
+    def __init__(self, player, decks=1, show_terminal=True):
         self.min_bet = 25
         self.max_bet = 3000
         self.dealer = Dealer()
         self.player = player
         self.deck = Deck(BJCard, decks)
         self.decks = decks
+        self.show_terminal = show_terminal
+
+    def terminal(self, value):
+        if self.show_terminal:
+            print(value)
 
     def handle_player(self, index):
         if self.player.hands[index].just_split:
@@ -237,7 +240,7 @@ class BlackJack:
             if not self.player.hands[index].busted:
                 decision = self.player.decision(self.dealer, index)
             else:
-                print("BUSTED\n")
+                self.terminal("BUSTED\n")
         if decision == "double":
             self.player.add_card(self.deck.deal(), index)
             self.player.bets[index] *= 2
@@ -257,24 +260,24 @@ class BlackJack:
             self.dealer.add_card(self.deck.deal())
 
     def handle_winning(self, index):
-        print(f"player:\n{self.player.hands[index]}\n")
+        self.terminal(f"player:\n{self.player.hands[index]}\n")
         if len(self.player.hands[index]) == 2 and self.player.hands[index].value == 21 and len(self.dealer.hand) > 2:
             self.player.money += self.player.bets[index] * (3 / 2)
-            print(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
+            self.terminal(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
             return
         if self.player.hands[index].surrendered:
-            print(f"lost {self.player.bets[index]}\n")
+            self.terminal(f"lost {self.player.bets[index]}\n")
             self.player.money -= self.player.bets[index]
             return
         if self.player.hands[index] == self.dealer.hand:
-            print("push\n")
+            self.terminal("push\n")
             return
         if self.player.hands[index] < self.dealer.hand:
-            print(f"lost {self.player.bets[index]}\n")
+            self.terminal(f"lost {self.player.bets[index]}\n")
             self.player.money -= self.player.bets[index]
             return
         self.player.money += self.player.bets[index]
-        print(f"won {self.player.bets[index]}\n")
+        self.terminal(f"won {self.player.bets[index]}\n")
 
     def reset(self):
         self.player.reset()
@@ -282,7 +285,7 @@ class BlackJack:
 
     def dealer_bj(self):
         if self.dealer.hand.value == 21:
-            print("Dealer BJ\n")
+            self.terminal("Dealer BJ\n")
             self.dealer.turn = True
             return True
         return False
@@ -296,7 +299,7 @@ class BlackJack:
             while index < self.player.num_hands:
                 index = self.handle_player(index)
             self.handle_dealer()
-        print(f"dealer:\n{self.dealer}\n")
+        self.terminal(f"dealer:\n{self.dealer}\n")
         for i in range(self.player.num_hands):
             self.handle_winning(i)
         self.reset()
@@ -310,9 +313,9 @@ class BlackJack:
             self.dealer.add_card(self.deck.deal())
 
     def play(self):
-        play = True
+        play = self.player.getPlay()
         while play:
             self.round()
             play = self.player.getPlay()
-        print(f"\n{self.player.money}")
+        self.terminal(f"\n{self.player.money}")
         return self.player.hands_played
