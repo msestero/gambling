@@ -50,14 +50,16 @@ class BJHand:
             self.can_split = False
         if len(self.cards) == 2 and self.cards[0] == self.cards[1]:
             self.can_split = True
+        else:
+            self.can_split = False
     
     def split(self):
         new_hand = BJHand()
         new_hand.add_card(self.cards[1])
         new_hand.just_split = True
-        self.value = 0
-        self.add_value(self.cards[0])
-        self.cards = [self.cards[0]]
+        other_card = self.cards[0]
+        self.reset()
+        self.add_card(other_card)
         self.just_split = True
         return new_hand
         
@@ -176,6 +178,7 @@ class BasicStrategyPlayer(Player):
         self.money = initial_money
         self.reset()
         self.hands_played = 0
+        self.high = self.money
 
     def set_num_hands(self):
         self.num_hands = 1
@@ -186,7 +189,159 @@ class BasicStrategyPlayer(Player):
         self.bets = [25]
     
     def decision(self, dealer, index):
-        return "stand"
+        if self.money > self.high:
+            self.high = self.money
+        if self.hands[index].can_split:
+            if self.handle_split(dealer, index):
+                self.hands_played += 1
+                return "split"
+        if self.hands[index].soft:
+            return self.handle_soft(dealer, index)
+        return self.handle_hard(dealer, index)
+
+    def handle_hard(self, dealer, index):
+
+        player_val = self.hands[index].value
+        dealer_card = str(dealer.hand.cards[1].num_val)
+
+        if self.hands[index].can_surrender:
+            if player_val == 16 and dealer_card in ["11", "10", "9"]:
+                return "surrender"
+            if player_val == 15 and dealer_card == "10":
+                return "surrender"
+
+        if player_val > 16:
+            return "stand"
+        if player_val < 9:
+            return "hit"
+
+        player_val = str(player_val)
+
+        grid = [["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+                ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+                ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+                ["S", "S", "S", "S", "S", "H", "H", "H", "H", "H"],
+                ["H", "H", "S", "S", "S", "H", "H", "H", "H", "H"],
+                ["D", "D", "D", "D", "D", "D", "D", "D", "D", "D"],
+                ["H", "D", "D", "D", "D", "D", "D", "D", "H", "H"],
+                ["H", "D", "D", "D", "D", "H", "H", "H", "H", "H"]]
+
+        rows = {"16" : 0,
+                "15" : 1,
+                "14" : 2,
+                "13" : 3,
+                "12" : 4,
+                "11" : 5,
+                "10" : 6,
+                "9"  : 7}
+        
+        columns = {"2"  : 0,
+                   "3"  : 1,
+                   "4"  : 2,
+                   "5"  : 3,
+                   "6"  : 4,
+                   "7"  : 5,
+                   "8"  : 6,
+                   "9"  : 7,
+                   "10" : 8,
+                   "11" : 9}
+
+        res = grid[rows[player_val]][columns[dealer_card]]
+
+        if res == "S":
+            return "stand"
+        if res == "H":
+            return "hit"
+        if self.hands[index].can_double:
+            return "double"
+        return "hit"
+
+    def handle_soft(self, dealer, index):
+
+        player_val = str(self.hands[index].value)
+        dealer_card = str(dealer.hand.cards[1].num_val)
+
+        grid = [["S", "S", "S", "S", "S", "S", "S", "S", "S", "S"],
+                ["S", "S", "S", "S", "Ds", "S", "S", "S", "S", "S"],
+                ["Ds", "Ds", "Ds", "Ds", "Ds", "S", "S", "H", "H", "H"],
+                ["H", "D", "D", "D", "D", "H", "H", "H", "H", "H"],
+                ["H", "H", "D", "D", "D", "H", "H", "H", "H", "H"],
+                ["H", "H", "D", "D", "D", "H", "H", "H", "H", "H"],
+                ["H", "H", "H", "D", "D", "H", "H", "H", "H", "H"],
+                ["H", "H", "H", "D", "D", "H", "H", "H", "H", "H"]]
+
+        rows = {"20" : 0,
+                "19" : 1,
+                "18"  : 2,
+                "17"  : 3,
+                "16"  : 4,
+                "15"  : 5,
+                "14"  : 6,
+                "13"  : 7}
+        
+        columns = {"2"  : 0,
+                   "3"  : 1,
+                   "4"  : 2,
+                   "5"  : 3,
+                   "6"  : 4,
+                   "7"  : 5,
+                   "8"  : 6,
+                   "9"  : 7,
+                   "10" : 8,
+                   "11" : 9}
+
+        res = grid[rows[player_val]][columns[dealer_card]]
+
+        if res == "S":
+            return "stand"
+        if res == "H":
+            return "hit"
+        if self.hands[index].can_double:
+            return "double"
+        if res == "Ds":
+            return "stand"
+        return "hit"
+        
+    def handle_split(self, dealer, index):
+
+        player_pair = str(self.hands[index].cards[0].num_val) + "s"
+        dealer_card = str(dealer.hand.cards[1].num_val)
+
+        grid = [[True , True , True , True , True , True , True , True , True , True ],
+                [False, False, False, False, False, False, False, False, False, False],
+                [True , True , True , True , True , False, True , True , False, False],
+                [True , True , True , True , True , True , True , True , True , True ],
+                [True , True , True , True , True , True , False, False, False, False],
+                [True , True , True , True , True , False, False, False, False, False],
+                [False, False, False, False, False, False, False, False, False, False],
+                [False, False, False, True , True , False, False, False, False, False],
+                [True , True , True , True , True , True , False, False, False, False],
+                [True , True , True , True , True , True , False, False, False, False]]
+
+        rows = {"11s" : 0,
+                "10s" : 1,
+                "9s"  : 2,
+                "8s"  : 3,
+                "7s"  : 4,
+                "6s"  : 5,
+                "5s"  : 6,
+                "4s"  : 7,
+                "3s"  : 8,
+                "2s"  : 9}
+
+        columns = {"2"  : 0,
+                   "3"  : 1,
+                   "4"  : 2,
+                   "5"  : 3,
+                   "6"  : 4,
+                   "7"  : 5,
+                   "8"  : 6,
+                   "9"  : 7,
+                   "10" : 8,
+                   "11" : 9}
+        
+        return grid[rows[player_pair]][columns[dealer_card]]
+
 
     def getPlay(self):
         if self.money >= 25:
@@ -235,9 +390,9 @@ class BlackJack:
         if self.player.hands[index].value == 21:
             return index + 1
         decision = self.player.decision(self.dealer, index)
-        while not self.player.hands[index].busted and decision == "hit":
+        while self.player.hands[index].value < 21 and decision == "hit":
             self.player.add_card(self.deck.deal(), index)
-            if not self.player.hands[index].busted:
+            if self.player.hands[index].value < 21:
                 decision = self.player.decision(self.dealer, index)
             else:
                 self.terminal("BUSTED\n")
@@ -314,8 +469,10 @@ class BlackJack:
 
     def play(self):
         play = self.player.getPlay()
+        count = 0
         while play:
+            count += 1
             self.round()
             play = self.player.getPlay()
         self.terminal(f"\n{self.player.money}")
-        return self.player.hands_played
+        return self.player.high
