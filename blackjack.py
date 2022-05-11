@@ -132,7 +132,7 @@ class Player:
             self.hands.append(BJHand())
         self.hands_played += hands
 
-    def set_bet(self, min, max):
+    def set_bet(self, min, max, true_count):
         bet = 0
         while not isinstance(bet, int) or bet < min or bet > max:
             print(f"your money: {self.money}\n")
@@ -186,7 +186,7 @@ class BasicStrategyPlayer(Player):
         self.hands = [BJHand()]
         self.hands_played += 1
 
-    def set_bet(self, min, max):
+    def set_bet(self, min, max, true_count):
         self.bets = [min]
     
     def decision(self, dealer, index):
@@ -350,6 +350,24 @@ class BasicStrategyPlayer(Player):
         return False
 
 
+class CardCounter(BasicStrategyPlayer):
+
+    def __init__(self, initial_money, hands_to_play, spread):
+        super(CardCounter, self).__init__(initial_money)
+        self.hands_to_play = hands_to_play
+        self.spread = spread
+
+    def getPlay(self):
+        if self.money >= 25 and self.hands_played <= self.hands_to_play:
+            return True
+        return False
+
+    def set_bet(self, min, max, true_count):    
+        self.bets = [min]
+        if true_count >= 2:
+            self.bets = [min * self.spread]
+
+
 class Dealer:
 
     def __init__(self):
@@ -381,6 +399,17 @@ class BlackJack:
         self.decks = decks
         self.show_terminal = show_terminal
         self.shuffle = shuffle
+        self.running_count = 0
+        self.true_count = 0
+
+    def deal_card(self):
+        card = self.deck.deal()
+        if card.num_val >= 10:
+            self.running_count -= 1
+        if card.num_val <= 6:
+            self.running_count += 1
+        self.true_count = self.running_count / (len(self.deck) / 52)
+        return card
 
     def terminal(self, value):
         if self.show_terminal:
@@ -388,19 +417,19 @@ class BlackJack:
 
     def handle_player(self, index):
         if self.player.hands[index].just_split:
-            self.player.add_card(self.deck.deal(), index)
+            self.player.add_card(self.deal_card(), index)
             self.player.hands[index].just_split = False
         if self.player.hands[index].value == 21:
             return index + 1
         decision = self.player.decision(self.dealer, index)
         while self.player.hands[index].value < 21 and decision == "hit":
-            self.player.add_card(self.deck.deal(), index)
+            self.player.add_card(self.deal_card(), index)
             if self.player.hands[index].value < 21:
                 decision = self.player.decision(self.dealer, index)
             else:
                 self.terminal("BUSTED\n")
         if decision == "double":
-            self.player.add_card(self.deck.deal(), index)
+            self.player.add_card(self.deal_card(), index)
             self.player.bets[index] *= 2
         if decision == "split":
             self.player.hands.insert(index + 1, self.player.hands[index].split())
@@ -415,7 +444,7 @@ class BlackJack:
     def handle_dealer(self):
         self.dealer.turn = True
         while self.dealer.hand.value < 17 or (self.dealer.hand.value == 17 and self.dealer.hand.soft):
-            self.dealer.add_card(self.deck.deal())
+            self.dealer.add_card(self.deal_card())
 
     def handle_winning(self, index):
         self.terminal(f"player:\n{self.player.hands[index]}\n")
@@ -451,7 +480,7 @@ class BlackJack:
     def round(self):
         self.reset()
         self.player.set_num_hands()
-        self.player.set_bet(self.min_bet, self.max_bet)
+        self.player.set_bet(self.min_bet, self.max_bet, self.true_count)
         self.deal()
         if not self.dealer_bj():
             index = 0
@@ -462,14 +491,17 @@ class BlackJack:
         self.terminal(f"dealer:\n{self.dealer}\n")
         for i in range(self.player.num_hands):
             self.handle_winning(i)
+        print(self.running_count, self.true_count, len(self.deck) / 52)
 
     def deal(self):
         if len(self.deck) / (52 * self.decks) <= self.shuffle:
             self.deck.shuffle()
+            self.running_count = 0
+            self.true_count = 0
         for i in range(2):
             for i in range(self.player.num_hands):
-                self.player.add_card(self.deck.deal(), i)
-            self.dealer.add_card(self.deck.deal())
+                self.player.add_card(self.deal_card(), i)
+            self.dealer.add_card(self.deal_card())
 
     def play(self):
         play = self.player.getPlay()
