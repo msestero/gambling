@@ -1,5 +1,6 @@
 from deck import Deck
 from deck import BJCard
+from copy import deepcopy
 
 class BJHand:
 
@@ -186,7 +187,7 @@ class BasicStrategyPlayer(Player):
         self.hands_played += 1
 
     def set_bet(self, min, max):
-        self.bets = [25]
+        self.bets = [min]
     
     def decision(self, dealer, index):
         if self.money > self.high:
@@ -370,14 +371,16 @@ class Dealer:
 
 class BlackJack:
 
-    def __init__(self, player, decks=1, show_terminal=True):
-        self.min_bet = 25
-        self.max_bet = 3000
+    def __init__(self, player, decks=1, show_terminal=True, min_bet=25, max_bet=3000, bj_payout=3/2, shuffle=0.5):
+        self.min_bet = min_bet
+        self.max_bet = max_bet
+        self.bj_payout = bj_payout
         self.dealer = Dealer()
         self.player = player
         self.deck = Deck(BJCard, decks)
         self.decks = decks
         self.show_terminal = show_terminal
+        self.shuffle = shuffle
 
     def terminal(self, value):
         if self.show_terminal:
@@ -417,8 +420,8 @@ class BlackJack:
     def handle_winning(self, index):
         self.terminal(f"player:\n{self.player.hands[index]}\n")
         if len(self.player.hands[index]) == 2 and self.player.hands[index].value == 21 and len(self.dealer.hand) > 2:
-            self.player.money += self.player.bets[index] * (3 / 2)
-            self.terminal(f"won {self.player.bets[index] * (3/2)} (Black Jack pays 3 to 2)\n")
+            self.player.money += self.player.bets[index] * self.bj_payout
+            self.terminal(f"won {self.player.bets[index] * self.bj_payout} (Black Jack pays 3 to 2)\n")
             return
         if self.player.hands[index].surrendered:
             self.terminal(f"lost {self.player.bets[index]}\n")
@@ -446,21 +449,22 @@ class BlackJack:
         return False
 
     def round(self):
+        self.reset()
         self.player.set_num_hands()
         self.player.set_bet(self.min_bet, self.max_bet)
         self.deal()
         if not self.dealer_bj():
             index = 0
+            self.terminal(self.player.money)
             while index < self.player.num_hands:
                 index = self.handle_player(index)
             self.handle_dealer()
         self.terminal(f"dealer:\n{self.dealer}\n")
         for i in range(self.player.num_hands):
             self.handle_winning(i)
-        self.reset()
 
     def deal(self):
-        if len(self.deck) / (52 * self.decks) <= 0.5:
+        if len(self.deck) / (52 * self.decks) <= self.shuffle:
             self.deck.shuffle()
         for i in range(2):
             for i in range(self.player.num_hands):
@@ -470,9 +474,13 @@ class BlackJack:
     def play(self):
         play = self.player.getPlay()
         count = 0
+        res = []
+        res.append(deepcopy(self.player))
         while play:
             count += 1
             self.round()
             play = self.player.getPlay()
+            res.append(deepcopy(self.player))
+
         self.terminal(f"\n{self.player.money}")
-        return self.player.high
+        return res
