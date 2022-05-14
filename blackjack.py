@@ -175,11 +175,12 @@ class Player:
 
 class BasicStrategyPlayer(Player):
 
-    def __init__(self, initial_money):
+    def __init__(self, initial_money, hands_to_play):
         self.money = initial_money
         self.reset()
         self.hands_played = 0
         self.high = self.money
+        self.hands_to_play = hands_to_play
 
     def set_num_hands(self):
         self.num_hands = 1
@@ -194,7 +195,6 @@ class BasicStrategyPlayer(Player):
             self.high = self.money
         if self.hands[index].can_split:
             if self.handle_split(dealer, index):
-                self.hands_played += 1
                 return "split"
         if self.hands[index].soft:
             return self.handle_soft(dealer, index)
@@ -210,6 +210,8 @@ class BasicStrategyPlayer(Player):
                 return "surrender"
             if player_val == 15 and dealer_card == "10":
                 return "surrender"
+
+        self.hands[index].can_surrender = False
 
         if player_val > 16:
             return "stand"
@@ -259,6 +261,7 @@ class BasicStrategyPlayer(Player):
 
     def handle_soft(self, dealer, index):
 
+        self.hands[index].can_surrender = False
         player_val = str(self.hands[index].value)
         dealer_card = str(dealer.hand.cards[1].num_val)
 
@@ -345,7 +348,7 @@ class BasicStrategyPlayer(Player):
 
 
     def getPlay(self):
-        if self.money >= 25:
+        if self.hands_played < self.hands_to_play:
             return True
         return False
 
@@ -353,18 +356,12 @@ class BasicStrategyPlayer(Player):
 class CardCounter(BasicStrategyPlayer):
 
     def __init__(self, initial_money, hands_to_play, spread):
-        super(CardCounter, self).__init__(initial_money)
-        self.hands_to_play = hands_to_play
+        super(CardCounter, self).__init__(initial_money, hands_to_play)
         self.spread = spread
-
-    def getPlay(self):
-        if self.money >= 25 and self.hands_played <= self.hands_to_play:
-            return True
-        return False
 
     def set_bet(self, min, max, true_count):    
         self.bets = [min]
-        if true_count >= 2:
+        if true_count > 1:
             self.bets = [min * self.spread]
 
 
@@ -389,7 +386,7 @@ class Dealer:
 
 class BlackJack:
 
-    def __init__(self, player, decks=1, show_terminal=True, min_bet=25, max_bet=3000, bj_payout=3/2, shuffle=0.5):
+    def __init__(self, player, decks=1, show_terminal=True, min_bet=25, max_bet=5000, bj_payout=3/2, shuffle=0.5):
         self.min_bet = min_bet
         self.max_bet = max_bet
         self.bj_payout = bj_payout
@@ -491,10 +488,10 @@ class BlackJack:
         self.terminal(f"dealer:\n{self.dealer}\n")
         for i in range(self.player.num_hands):
             self.handle_winning(i)
-        print(self.running_count, self.true_count, len(self.deck) / 52)
+        self.terminal((self.running_count, self.true_count, len(self.deck) / 52))
 
     def deal(self):
-        if len(self.deck) / (52 * self.decks) <= self.shuffle:
+        if len(self.deck) / 52 <= self.shuffle:
             self.deck.shuffle()
             self.running_count = 0
             self.true_count = 0
