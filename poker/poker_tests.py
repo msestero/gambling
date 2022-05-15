@@ -1,6 +1,11 @@
+#change a lot of code this needs to be updated,
+#all of them fail right now
+
+
 import unittest
 
 from cards.deck import Card
+from cards.deck import Deck
 from .poker import hand
 from .poker import player
 
@@ -14,33 +19,33 @@ class TestCard(unittest.TestCase):
         
     def test_error(self):
         with self.assertRaises(ValueError):
-            card("Sdfasd", "9")
+            Card("Sdfasd", "9")
         with self.assertRaises(ValueError):
-            card("Spades", "asdf")
+            Card("Spades", "asdf")
 
     def test_lt(self):
-        card1 = card("Hearts", "9")
-        card2 = card("Spades", "K")
+        card1 = Card("Hearts", "9")
+        card2 = Card("Spades", "K")
         self.assertTrue(card1 < card2)
         self.assertTrue(card2 > card1)
 
     def test_str(self):
-        card1 = card("Clubs", "Q")
+        card1 = Card("Clubs", "Q")
         self.assertEqual(str(card1), "Q of Clubs")
 
 class TestDeck(unittest.TestCase):
     def test_constructor(self):
-        deck1 = deck()
+        deck1 = Deck()
         self.assertEqual(len(deck1.deck), 52)
 
     def test_deal(self):
-        deck1 = deck()
+        deck1 = Deck()
         card = deck1.deal()
         self.assertEqual(len(deck1.deck), 51)
         self.assertIsNotNone(card)
 
     def test_burn(self):
-        deck1 = deck()
+        deck1 = Deck()
         card = deck1.deal()
         self.assertEqual(len(deck1.deck), 51)
         self.assertIsNotNone(card)
@@ -49,7 +54,7 @@ class TestDeck(unittest.TestCase):
         self.assertIsNone(burn)
 
     def test_reshuffle(self):
-        deck1 = deck()
+        deck1 = Deck()
         for i in range(30):
             deck1.burn()
         self.assertEqual(len(deck1.deck), 22)
@@ -63,7 +68,7 @@ class TestHand(unittest.TestCase):
     
     def test_addCard(self):
         hand1 = hand()
-        deck1 = deck()
+        deck1 = Deck()
         hand1.add_card(deck1.deal())
         self.assertEqual(hand1.hand_name, None)
         self.assertEqual(hand1.hand_val, 0)
@@ -77,7 +82,7 @@ class TestHand(unittest.TestCase):
 
     def test_pair(self):
         hand1 = hand()
-        cards = [card("Spades", "10"), card("Hearts", "10")]
+        cards = [Card("Spades", "10"), Card("Hearts", "10")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "pair")
@@ -88,10 +93,10 @@ class TestHand(unittest.TestCase):
     def test_twoPair(self):
         hand1 = hand()
         #these have to be pre sorted
-        cards = [card("Spades", "A"), 
-                 card("Hearts", "A"),
-                 card("Spades", "10"), 
-                 card("Hearts", "10")]
+        cards = [Card("Spades", "A"), 
+                 Card("Hearts", "A"),
+                 Card("Spades", "10"), 
+                 Card("Hearts", "10")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "two pair")
@@ -101,9 +106,9 @@ class TestHand(unittest.TestCase):
 
     def test_threeOfKind(self):
         hand1 = hand()
-        cards = [card("Spades", "A"), 
-                 card("Hearts", "A"),
-                 card("Clubs", "A")]
+        cards = [Card("Spades", "A"), 
+                 Card("Hearts", "A"),
+                 Card("Clubs", "A")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "three of a kind")
@@ -113,11 +118,11 @@ class TestHand(unittest.TestCase):
 
     def test_straight(self):
         hand1 = hand()
-        cards = [card("Spades", "A"), 
-                 card("Hearts", "K"),
-                 card("Clubs", "Q"),
-                 card("Spades", "J"),
-                 card("Clubs", "10")]
+        cards = [Card("Spades", "A"), 
+                 Card("Hearts", "K"),
+                 Card("Clubs", "Q"),
+                 Card("Spades", "J"),
+                 Card("Clubs", "10")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "straight")
@@ -127,11 +132,11 @@ class TestHand(unittest.TestCase):
 
     def test_flush(self):
         hand1 = hand()
-        cards = [card("Spades", "A"), 
-                 card("Spades", "Q"),
-                 card("Spades", "J"),
-                 card("Spades", "10"),
-                 card("Spades", "9")]
+        cards = [Card("Spades", "A"), 
+                 Card("Spades", "Q"),
+                 Card("Spades", "J"),
+                 Card("Spades", "10"),
+                 Card("Spades", "9")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "flush")
@@ -141,11 +146,11 @@ class TestHand(unittest.TestCase):
     
     def test_fullhouse(self):
         hand1 = hand()
-        cards = [card("Spades", "A"), 
-                 card("Clubs", "A"),
-                 card("Diamonds", "A"),
-                 card("Spades", "K"),
-                 card("Clubs", "K")]
+        cards = [Card("Spades", "A"), 
+                 Card("Clubs", "A"),
+                 Card("Diamonds", "A"),
+                 Card("Spades", "K"),
+                 Card("Clubs", "K")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "full house")
@@ -155,10 +160,10 @@ class TestHand(unittest.TestCase):
 
     def test_fourOfKind(self):
         hand1 = hand()
-        cards = [card("Spades", "A"), 
-                 card("Hearts", "A"),
-                 card("Clubs", "A"),
-                 card("Diamonds", "A")]
+        cards = [Card("Spades", "A"), 
+                 Card("Hearts", "A"),
+                 Card("Clubs", "A"),
+                 Card("Diamonds", "A")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "four of a kind")
@@ -168,11 +173,11 @@ class TestHand(unittest.TestCase):
 
     def test_straightflush(self):
         hand1 = hand()
-        cards = [card("Spades", "K"), 
-                 card("Spades", "Q"),
-                 card("Spades", "J"),
-                 card("Spades", "10"),
-                 card("Spades", "9")]
+        cards = [Card("Spades", "K"), 
+                 Card("Spades", "Q"),
+                 Card("Spades", "J"),
+                 Card("Spades", "10"),
+                 Card("Spades", "9")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "straight flush")
@@ -182,11 +187,11 @@ class TestHand(unittest.TestCase):
 
     def test_royal(self):
         hand1 = hand()
-        cards = [card("Spades", "A"),
-                 card("Spades", "K"), 
-                 card("Spades", "Q"),
-                 card("Spades", "J"),
-                 card("Spades", "10")]
+        cards = [Card("Spades", "A"),
+                 Card("Spades", "K"), 
+                 Card("Spades", "Q"),
+                 Card("Spades", "J"),
+                 Card("Spades", "10")]
         hand1.add_cards(cards)
         hand1.update()
         self.assertEqual(hand1.hand_name, "royal flush")
@@ -196,17 +201,17 @@ class TestHand(unittest.TestCase):
 
     def test_compHand(self):
         hand1 = hand()
-        hand1.add_cards([card("Spades", "9"), 
-                        card("Hearts", "5"),
-                        card("Diamonds", "6"), 
-                        card("Clubs", "A"),
-                        card("Spades", "Q")])
+        hand1.add_cards([Card("Spades", "9"), 
+                        Card("Hearts", "5"),
+                        Card("Diamonds", "6"), 
+                        Card("Clubs", "A"),
+                        Card("Spades", "Q")])
         hand2 = hand()
-        hand1.add_cards([card("Clubs", "9"), 
-                        card("Diamonds", "5"),
-                        card("Diamonds", "6"), 
-                        card("Spades", "A"),
-                        card("Clubs", "Q")])
+        hand1.add_cards([Card("Clubs", "9"), 
+                        Card("Diamonds", "5"),
+                        Card("Diamonds", "6"), 
+                        Card("Spades", "A"),
+                        Card("Clubs", "Q")])
         self.assertEqual(hand1, hand2)
 
 class TestPlayer(unittest.TestCase):
@@ -217,7 +222,7 @@ class TestPlayer(unittest.TestCase):
 
     def test_hand(self):
         player1 = player("player1", 1000)
-        deck1 = deck()
+        deck1 = Deck()
         # for i in range(2):
         #     player1.recieve_deal(deck1.deal())
         # for i in range(5):
