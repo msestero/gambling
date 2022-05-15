@@ -12,16 +12,16 @@ from multiprocessing import Pool
 
 def sim_game():
     starting_cash = 0
-    spread = 100
-    max_hands = 100000
-    player = BasicStrategyPlayer(starting_cash, max_hands)
-    #player = CardCounter(starting_cash, max_hands, spread)
-    game = BlackJack(player, min_bet=25, decks=6, show_terminal=False)
+    spread = 30
+    max_hands = 50000
+    #player = BasicStrategyPlayer(starting_cash, max_hands)
+    player = CardCounter(starting_cash, max_hands, spread)
+    game = BlackJack(player, min_bet=5, decks=6, show_terminal=False)
     return game.play()
 
 
 def main():
-    attempts = 10
+    attempts = 1
     t = process_time()
     games = []
     while len(games) < attempts:

@@ -35,8 +35,8 @@ class BaccaratPlayer:
     def set_bet(self, true_count):
         self.banker_bet = 10
         self.dragon_bet = 0
-        if true_count >= 1:
-            self.dragon_bet = 10
+        # if true_count >= 4:
+        #     self.dragon_bet = 10
         self.total_bet = self.banker_bet + self.dragon_bet
 
 
@@ -60,7 +60,8 @@ class Baccarat:
         return card
 
     def deal(self):
-        if len(self.deck) < 20:
+        if len(self.deck) < 26:
+            self.deck.shuffle()
             self.deck.shuffle()
         for i in range(2):
             self.player.add_card(self.deal_card())
@@ -96,11 +97,13 @@ class Baccarat:
             self.player_bet.money -= self.player_bet.total_bet
             return self.player_bet.money
         if self.player == self.banker:
+            self.player_bet.money -= self.player_bet.dragon_bet
             return self.player_bet.money
         if self.banker.value == 7 and len(self.banker.cards) == 3:
-            self.player_bet.money += self.player_bet.dragon_bet * 40
+            self.player_bet.money += self.player_bet.dragon_bet * 40 #+ self.player_bet.banker_bet
             return self.player_bet.money
         self.player_bet.money += self.player_bet.banker_bet
+        self.player_bet.money -= self.player_bet.dragon_bet
         return self.player_bet.money
 
     def round(self):
