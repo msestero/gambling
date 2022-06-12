@@ -12,8 +12,8 @@ from multiprocessing import Pool
 
 def sim_game():
     starting_cash = 0
-    spread = 30
-    max_hands = 50000
+    spread = 20
+    max_hands = 1000000
     #player = BasicStrategyPlayer(starting_cash, max_hands)
     player = CardCounter(starting_cash, max_hands, spread)
     game = BlackJack(player, min_bet=5, decks=6, show_terminal=False)
@@ -31,6 +31,7 @@ def main():
     plot_money(df_money)
     print(ev_per_hand(df_money))
     print(calc_edge(df_money))
+    print(df_money.min())
 
 
 def get_df_money(games):

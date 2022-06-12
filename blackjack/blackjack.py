@@ -205,11 +205,11 @@ class BasicStrategyPlayer(Player):
         player_val = self.hands[index].value
         dealer_card = str(dealer.hand.cards[1].num_val)
 
-        if self.hands[index].can_surrender:
-            if player_val == 16 and dealer_card in ["11", "10", "9"]:
-                return "surrender"
-            if player_val == 15 and dealer_card == "10":
-                return "surrender"
+        # if self.hands[index].can_surrender:
+        #     if player_val == 16 and dealer_card in ["11", "10", "9"]:
+        #         return "surrender"
+        #     if player_val == 15 and dealer_card == "10":
+        #         return "surrender"
 
         self.hands[index].can_surrender = False
 
