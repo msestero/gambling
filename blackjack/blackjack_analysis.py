@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 from numpy import transpose
 
 from time import process_time
-from multiprocessing import Pool
 
 def sim_game():
     starting_cash = 0

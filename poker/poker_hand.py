@@ -1,8 +1,6 @@
-from cards.deck import Deck, PokerCard
-
 #This is the hand object
 #Each player will have a hand
-class hand:
+class PokerHand:
 
     #No values are give when instantiated because the player does not have any cards
     def __init__(self):
@@ -33,7 +31,6 @@ class hand:
         return ((self == other) or (self < other))
 
     def __ge__(self, other):
-        print("here")
         return ((self > other) or (self == other))
 
     #Used to compare different hands
@@ -182,7 +179,7 @@ class hand:
         if first_pair is None or len(self.cards) < 4:
             return None
         cards = self.getothers(first_pair)
-        new_hand = hand()
+        new_hand = PokerHand()
         new_hand.add_cards(cards)
         second_pair = new_hand.pair()
         if second_pair:
@@ -265,7 +262,7 @@ class hand:
         three = self.threeofkind()
         if not three:
             return None
-        new_hand = hand()
+        new_hand = PokerHand()
         new_hand.add_cards(self.getothers(three))
         pair = new_hand.pair()
         if pair:
@@ -279,7 +276,7 @@ class hand:
             return None
         suite = flush[0].suite
         others = list(filter(lambda card: (card.suite == suite), self.getothers(flush)))
-        new_hand = hand()
+        new_hand = PokerHand()
         new_hand.add_cards(flush + others)
         return new_hand.straight()
 
@@ -292,151 +289,3 @@ class hand:
         if flush[0].value == "A" and flush[-1].value == "10":
             return flush
         return None
-        
-
-class player:
-
-    def __init__(self, name, starting_money):
-        self.name = name
-        self.personal_cards = []
-        self.table_cards = []
-        self.hand = hand()
-        self.money = starting_money
-        self.accurateHand = True
-        self.currBet = 0
-
-    def __str__(self):
-        res = self.name + " (" + str(self.money) + ")\nPERSONAL CARDS:\n"
-        for card in self.personal_cards:
-            res += str(card) + "\n"
-        res += "TABLE CARDS:\n"
-        for card in self.table_cards:
-            res += str(card) + "\n"
-        res += "BEST HAND:\n" + str(self.get_hand()) + "\n\n"
-        return res
-
-    def blind(self, amount):
-        self.money -= amount
-
-    def call(self, currBet):
-        amount = currBet - self.currBet
-        self.money -= amount
-        return amount
-
-    def raisee(self, currBet):
-        amount = int(input("Raise to: "))
-        if amount < currBet:
-            print("Need to raise more or call")
-            self.turn_call(currBet)
-        self.money -= amount - self.currBet
-        return amount - self.currBet
-
-    def fold():
-        return "folded"
-
-    def turn_call(self, currBet):
-        decision = str(input("Call (c) | Raise (r) | Fold (f) "))
-        if decision == "c":
-            return self.call(currBet)
-        if decision == "r":
-            return self.raisee(currBet)
-        if decision == "f":
-            return self.fold()
-
-    def turn_check(self):
-        decision = str(input("Check (c) | Raise (r) | Fold (f) "))
-        if decision == "c":
-            return 0
-        if decision == "r":
-            return self.raisee(0)
-        if decision == "f":
-            return self.fold()
-
-    def turn(self, currBet):
-        print("Current Bet: " + str(currBet))
-        if self.currBet != currBet:
-            return self.turn_call(currBet)
-        return self.turn_check()
-
-
-    def recieve_deal(self, card):
-        self.personal_cards.append(card)
-        self.hand.add_card(card)
-        self.accurateHand = False
-
-    def update_table(self, card):
-        self.table_cards.append(card)
-        self.hand.add_card(card)
-        self.accurateHand = False
-
-    def clear_cards(self):
-        self.personal_cards = []
-        self.table_cards = []
-
-    def get_hand(self):
-        if not self.accurateHand:
-            self.hand.update()
-            self.accurateHand = True
-        return self.hand
-
-class game:
-
-    def __init__(self, buyin, max_num_buyin, little_blind):
-        self.buyin = buyin
-        self.max_buyin = buyin * max_num_buyin
-        self.little_blind = little_blind
-        self.pot = 0
-        self.table_cards = []
-        self.players = [None] * 9
-        self.seats_taken = []
-        self.dealer_pos = 1
-        self.deck = Deck(PokerCard)
-        self.curr_bet = 0
-
-    def addPlayer(self, player, pos):
-        if self.players[pos]:
-            print("Position Already taken")
-            return
-        self.players[pos] = player
-        self.seats_taken.append(pos)
-
-    def deal(self):
-        for seat in self.seats_taken:
-            self.players[seat].recieve_deal(self.deck.deal())
-        for seat in self.seats_taken:
-            self.players[seat].recieve_deal(self.deck.deal())
-
-    def blinds(self):
-        littleBlind = None
-        bigBlind = None
-        pos = self.dealer_pos + 1
-        while bigBlind is None:
-            player = self.players[pos % 9]
-            if player and not littleBlind:
-                littleBlind = player
-            elif player and littleBlind:
-                bigBlind = player
-            pos += 1
-        littleBlind.blind(self.little_blind)
-        bigBlind.blind(self.little_blind * 2)
-        self.pot = 3 * self.little_blind
-        self.curr_bet = 2 * self.little_blind
-
-    # def betting(self):
-    #     initial_better = self.dealer_pos
-
-    def order_seats_taken(self):
-        self.seats_taken.sort()
-        dealer_index = self.seats_taken.index(self.dealer_pos)
-        self.seats_taken = self.seats_taken[dealer_index:] + self.seats_taken[:dealer_index]
-        self.seats_taken = self.seats_taken[1:] + [self.seats_taken[0]]
-
-
-    def play_round(self):
-        if len(self.seats_taken) < 2:
-            raise("not enough players")
-        self.order_seats_taken()
-        self.deal()
-        self.blinds()
-        for player in self.players:
-            print(player)

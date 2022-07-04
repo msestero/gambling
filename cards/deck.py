@@ -44,6 +44,9 @@ class PokerCard(Card):
             return 14
         return int(self.value)
 
+    def __eq__(self, other):
+        return self.num_val == other.num_val
+
 class BJCard(Card):
 
     def __init__(self, suite, value):
@@ -101,6 +104,15 @@ class Deck:
                  for value in values] * self.num_decks
         shuffle(cards)
         self.deck = cards
+
+    def pluck(self, num_value, suite=None):
+        for pos, card in enumerate(self.deck):
+            if card.num_val == num_value and (suite is None or suite == card.suite):
+                res = card
+                print(res, pos)
+                self.deck = self.deck[:pos] + self.deck[pos+1:]
+                return res
+                
 
     #returns the card on top and removes it from the deck
     def deal(self):

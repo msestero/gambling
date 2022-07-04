@@ -173,6 +173,22 @@ class Player:
             return False
         return self.getPlay()
 
+class StandPlayer(Player):
+
+    def __init__(self, initial_money, hands_to_play):
+        self.money = initial_money
+        self.reset()
+        self.hands_played = 0
+        self.high = self.money
+        self.hands_to_play = hands_to_play
+
+    def set_bet(self, min, max, true_count):
+        self.bets = [min]
+
+    def decision(self, dealer, index):
+        return "stand"
+
+
 class BasicStrategyPlayer(Player):
 
     def __init__(self, initial_money, hands_to_play):
@@ -263,7 +279,7 @@ class BasicStrategyPlayer(Player):
 
         self.hands[index].can_surrender = False
         player_val = str(self.hands[index].value)
-        dealer_card = str(dealer.hand.cards[1].num_val)
+        dealer_card = str(dealer.hand.cards[0].num_val)
 
         grid = [["S", "S", "S", "S", "S", "S", "S", "S", "S", "S"],
                 ["S", "S", "S", "S", "Ds", "S", "S", "S", "S", "S"],
@@ -380,7 +396,7 @@ class Dealer:
     
     def __str__(self):
         if not self.turn:
-            return str(self.hand.cards[1])
+            return str(self.hand.cards[0])
         return str(self.hand)
 
 
@@ -513,3 +529,38 @@ class BlackJack:
 
         self.terminal(f"\n{self.player.money}")
         return res
+
+
+class BlackJackRigged(BlackJack):
+
+    def __init__(self, player, initial_cards, decks=1, show_terminal=True, min_bet=25, max_bet=5000, bj_payout=3/2, shuffle=0.5):
+        super(BlackJack, self).__init__(player, decks, show_terminal, min_bet, max_bet, bj_payout, shuffle)
+        self.player_card_1 = initial_cards[0]
+        self.player_card_2 = initial_cards[1]
+        self.dealer_up_card = initial_cards[2]
+
+    def deal(self):
+        if len(self.deck) / 52 <= self.shuffle:
+            self.deck.shuffle()
+            self.running_count = 0
+            self.true_count = 0
+        for i in range(2):
+            for i in range(self.player.num_hands):
+                self.player.add_card(self.deal_card(), i)
+            self.dealer.add_card(self.deal_card())
+
+    def round(self):
+        self.reset()
+        self.player.set_num_hands()
+        self.player.set_bet(self.min_bet, self.max_bet, self.true_count)
+        self.deal()
+        if not self.dealer_bj():
+            index = 0
+            self.terminal(self.player.money)
+            while index < self.player.num_hands:
+                index = self.handle_player(index)
+            self.handle_dealer()
+        self.terminal(f"dealer:\n{self.dealer}\n")
+        for i in range(self.player.num_hands):
+            self.handle_winning(i)
+        self.terminal((self.running_count, self.true_count, len(self.deck) / 52))
