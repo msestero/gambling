@@ -4,7 +4,8 @@
 
 import unittest
 
-from cards.deck import Card, Deck, PokerCard
+from cards.deck import Deck
+from cards.card import PokerCard
 from .poker_hand import PokerHand
 from .poker_player import PokerPlayer
 from .poker_game import PokerGame
@@ -31,7 +32,7 @@ class TestCard(unittest.TestCase):
         self.assertTrue(card2 > card1)
 
     def test_str(self):
-        card1 = Card("Clubs", "Q")
+        card1 = PokerCard("Clubs", "Q")
         self.assertEqual(str(card1), "Q of Clubs")
 
 class TestDeck(unittest.TestCase):
